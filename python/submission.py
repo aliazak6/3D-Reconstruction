@@ -49,22 +49,7 @@ def eight_point(pts1, pts2, M):
     
     return F
 
-
-def closest_point_on_line(line, point, im):
-    """
-    Find the closest point on a line to a given point
-    """
-    x0, y0 = point[0], point[1]
-    im_x = np.array(range(640))
-    a, b, c = line[0], line[1], line[2]
-    # find all y values for the line
-    epi_y = (-a/b)*im_x - c/b
-    # find the closest line point on the given point
-    points = list(zip(im_x,epi_y))
-    #Calculate euclidean distance between the point and all points on the line
-    point_2 = points[np.linalg.norm(points - point[:2], axis=1).argmin()]
-    return point_2
-    
+  
 
 
 """
@@ -77,7 +62,6 @@ Q3.1.2 Epipolar Correspondences
 """
 def epipolar_correspondences(im1, im2, F, pts1):
 
-    # window oluşturmak lazım
     window_size = 10
     # Calculate epipolar lines
     h_pts1 = np.hstack((pts1, np.ones((pts1.shape[0],1)))).astype(np.uint16)
@@ -121,6 +105,47 @@ def epipolar_correspondences(im1, im2, F, pts1):
         pts2[i] = points[np.argmin(points_distance)]
     return pts2
 
+
+
+"""
+Q3.1.3 Essential Matrix
+       [I] F, the fundamental matrix (3x3 matrix)
+           K1, camera matrix 1 (3x3 matrix)
+           K2, camera matrix 2 (3x3 matrix)
+       [O] E, the essential matrix (3x3 matrix)
+"""
+def essential_matrix(F, K1, K2):
+    #F_norm = np.linalg.inv(K2.T) @ F @ np.linalg.inv(K1)
+    E = K1.T @ F @ K2
+    return E
+
+
+"""
+Q3.1.4 Triangulation
+       [I] P1, camera projection matrix 1 (3x4 matrix)
+           pts1, points in image 1 (Nx2 matrix)
+           P2, camera projection matrix 2 (3x4 matrix)
+           pts2, points in image 2 (Nx2 matrix)
+       [O] pts3d, 3D points in space (Nx3 matrix)
+"""
+def triangulate(P1, pts1, P2, pts2):
+    pts3d = []
+    # Triangulate the points
+    for point1 , point2 in zip(pts1, pts2):
+        x0, y0 = point1
+        x1, y1 = point2
+        A = np.vstack([  \
+        y0*P1[2] - P1[1],\
+        P1[0] - x0*P1[2],\
+        y1*P2[2] - P2[1],\
+        P2[0] - x1*P2[2]])
+        U, S, V = np.linalg.svd(A)
+        X = V[-1,:]
+        X = X[:-1]/X[-1]
+        pts3d.append(X)
+    pts3d = np.array(pts3d)
+    return pts3d
+
 if __name__ == '__main__':
     import os
     import cv2
@@ -141,30 +166,6 @@ if __name__ == '__main__':
     im2 = cv2.imread(im2_path)
     #displayEpipolarF(im1,im2, F)
     epipolarMatchGUI(im1, im2, F)
-
-"""
-Q3.1.3 Essential Matrix
-       [I] F, the fundamental matrix (3x3 matrix)
-           K1, camera matrix 1 (3x3 matrix)
-           K2, camera matrix 2 (3x3 matrix)
-       [O] E, the essential matrix (3x3 matrix)
-"""
-def essential_matrix(F, K1, K2):
-    # replace pass by your implementation
-    pass
-
-
-"""
-Q3.1.4 Triangulation
-       [I] P1, camera projection matrix 1 (3x4 matrix)
-           pts1, points in image 1 (Nx2 matrix)
-           P2, camera projection matrix 2 (3x4 matrix)
-           pts2, points in image 2 (Nx2 matrix)
-       [O] pts3d, 3D points in space (Nx3 matrix)
-"""
-def triangulate(P1, pts1, P2, pts2):
-    # replace pass by your implementation
-    pass
 
 
 """
