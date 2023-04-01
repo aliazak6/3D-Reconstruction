@@ -49,10 +49,53 @@ def eight_point(pts1, pts2, M):
     
     return F
 
+
+def closest_point_on_line(line, point, im):
+    """
+    Find the closest point on a line to a given point
+    """
+    x0, y0 = point[0], point[1]
+    im_x = np.array(range(640))
+    a, b, c = line[0], line[1], line[2]
+    # find all y values for the line
+    epi_y = (-a/b)*im_x - c/b
+    # find the closest line point on the given point
+    points = list(zip(im_x,epi_y))
+    #Calculate euclidean distance between the point and all points on the line
+    point_2 = points[np.linalg.norm(points - point[:2], axis=1).argmin()]
+    return point_2
+    
+
+
+"""
+Q3.1.2 Epipolar Correspondences
+       [I] im1, image 1 (H1xW1 matrix)
+           im2, image 2 (H2xW2 matrix)
+           F, fundamental matrix from image 1 to image 2 (3x3 matrix)
+           pts1, points in image 1 (Nx2 matrix)
+       [O] pts2, points in image 2 (Nx2 matrix)
+"""
+def epipolar_correspondences(im1, im2, F, pts1):
+
+    # window oluşturmak lazım
+
+    # Calculate epipolar lines
+    pts1 = np.hstack((pts1, np.ones((pts1.shape[0],1)))).astype(np.uint16)
+    epipolar_lines = (F @ pts1.T).T # Nx3
+    
+    # Find the closest point on the epipolar line
+    pts2 = np.zeros((pts1.shape[0],2))
+    for i in range(pts1.shape[0]):
+        # Find the closest point on the epipolar line
+        pts2[i] = closest_point_on_line(epipolar_lines[i], pts1[i], im2)
+    return pts2
+
+
 if __name__ == '__main__':
     import os
     import cv2
     from helper import displayEpipolarF
+    from helper import epipolarMatchGUI
     # Test your code here
     dirname = os.path.dirname(__file__)
     data_path = os.path.join(dirname, '../data/some_corresp.npz')
@@ -66,20 +109,8 @@ if __name__ == '__main__':
     im2_path = os.path.join(dirname, '../data/im2.png')
     im1 = cv2.imread(im1_path)
     im2 = cv2.imread(im2_path)
-    displayEpipolarF(im1,im2, F)
-
-"""
-Q3.1.2 Epipolar Correspondences
-       [I] im1, image 1 (H1xW1 matrix)
-           im2, image 2 (H2xW2 matrix)
-           F, fundamental matrix from image 1 to image 2 (3x3 matrix)
-           pts1, points in image 1 (Nx2 matrix)
-       [O] pts2, points in image 2 (Nx2 matrix)
-"""
-def epipolar_correspondences(im1, im2, F, pts1):
-    # replace pass by your implementation
-    pass
-
+    #displayEpipolarF(im1,im2, F)
+    epipolarMatchGUI(im1, im2, F)
 
 """
 Q3.1.3 Essential Matrix
