@@ -22,8 +22,8 @@ pts2_mine = sub.epipolar_correspondences(im1, im2, F, pts1_temple)
 # 5. Compute the camera projection matrix P1
 K1 = np.load(os.path.join(dirname,'../data/intrinsics.npz')).get("K1")
 K2 = np.load(os.path.join(dirname,'../data/intrinsics.npz')).get("K2")
-# Assignment pdf is wrong about P1. Using identity matrix instead of K1 gives bad results.
-P1 = np.hstack([K1,np.zeros([3,1])])
+extrinsic1 = np.hstack((np.eye(3), np.zeros((3,1))))
+P1 = K1 @ extrinsic1
 # 6. Use camera2 to get 4 camera projection matrices P2
 E = sub.essential_matrix(F, K1, K2)
 P2 = hlp.camera2(E)
@@ -57,11 +57,10 @@ ax.set_zlabel('Z')
 plt.show()
 
 # 10. Save the computed extrinsic parameters (R1,R2,t1,t2) to data/extrinsics.npz
-
-
-
-
-
+# P = K[R|t]
+# extrinsic = [R|t] = inv(K) @ P
+extrinsic2 = np.linalg.inv(K2) @ P2
+np.savez(os.path.join(dirname,'../data/extrinsics.npz'), R1=extrinsic1[:3,:3], R2=extrinsic2[:3,:3], t1=extrinsic1[:3,3], t2=extrinsic2[:3,3])
 
  # Project the 3D points back to image 1 to compute the reprojection error
 proj1 = (K1 @ P1 @ np.hstack((pts3d, np.ones((pts3d.shape[0], 1)))).T).T
