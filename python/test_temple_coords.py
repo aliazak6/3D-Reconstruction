@@ -62,8 +62,3 @@ plt.show()
 extrinsic2 = np.linalg.inv(K2) @ P2
 np.savez(os.path.join(dirname,'../data/extrinsics.npz'), R1=extrinsic1[:3,:3], R2=extrinsic2[:3,:3], t1=extrinsic1[:3,3], t2=extrinsic2[:3,3])
 
- # Project the 3D points back to image 1 to compute the reprojection error
-proj1 = (K1 @ P1 @ np.hstack((pts3d, np.ones((pts3d.shape[0], 1)))).T).T
-proj1 = proj1[:, :2] / proj1[:, 2:]
-error = np.mean(np.linalg.norm(pts1_some - proj1, axis=1))
-print('Reprojection error: {}'.format(error))
