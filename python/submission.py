@@ -78,18 +78,48 @@ Q3.1.2 Epipolar Correspondences
 def epipolar_correspondences(im1, im2, F, pts1):
 
     # window oluşturmak lazım
-
+    window_size = 10
     # Calculate epipolar lines
-    pts1 = np.hstack((pts1, np.ones((pts1.shape[0],1)))).astype(np.uint16)
-    epipolar_lines = (F @ pts1.T).T # Nx3
-    
+    h_pts1 = np.hstack((pts1, np.ones((pts1.shape[0],1)))).astype(np.uint16)
+    epipolar_lines = (F @ h_pts1.T).T # Nx3
+
     # Find the closest point on the epipolar line
     pts2 = np.zeros((pts1.shape[0],2))
+    im_x = np.array(range(640))
+    points_average = []
     for i in range(pts1.shape[0]):
         # Find the closest point on the epipolar line
-        pts2[i] = closest_point_on_line(epipolar_lines[i], pts1[i], im2)
-    return pts2
+        line = epipolar_lines[i]
+        x0, y0 = pts1[i][0], pts1[i][1]
+        # Calculate the window coordinates
+        xmin, ymin = max(x0 - window_size,0), max(y0 - window_size,0)
+        xmax, ymax = min(xmin + 2*window_size + 1,im1.shape[1]),min(ymin + 2*window_size + 1,im1.shape[0])
+        a, b, c = line[0], line[1], line[2]
+        # find all y values for the line
+        epi_y = (-a/b)*im_x - c/b
+        # find the closest line point on the given point
+        points = np.array(list(zip(im_x,epi_y))).astype(np.uint16)
 
+        # At this point in the algorithm, we have points variable with points in epipolar line
+        # We have x0 and y0 -> original points in im1
+        # We need to average x0,y0 in im1 with a window. Do same in im2 with points. Minimum difference should be our pts2[i]
+
+        im1_window = im1[ymin:ymax, xmin:xmax]
+        points_distance = []
+
+        for point in points:
+            # Create a window around the point
+            x2min, y2min = max(point[0] - window_size,0), max(point[1] - window_size,0)
+            x2max, y2max = min(x2min + 2*window_size + 1,im2.shape[1]),min(y2min + 2*window_size + 1,im2.shape[0])
+            if x2max == im2.shape[1]:
+                x2min = x2max -(2*window_size + 1)
+            if y2max == im2.shape[0]:
+                y2min = y2max -(2*window_size + 1)
+            im2_window = im2[y2min:y2max, x2min:x2max]
+            dist = np.sqrt(np.sum((im1_window - im2_window)**2))
+            points_distance.append(dist)
+        pts2[i] = points[np.argmin(points_distance)]
+    return pts2
 
 if __name__ == '__main__':
     import os

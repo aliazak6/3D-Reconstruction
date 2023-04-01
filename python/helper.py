@@ -116,6 +116,7 @@ def camera2(E):
 
 
 def epipolarMatchGUI(I1, I2, F):
+    import time
     e1, e2 = _epipoles(F)
 
     sy, sx, sd = I2.shape
@@ -158,7 +159,9 @@ def epipolarMatchGUI(I1, I2, F):
 
         # draw points
         pc = np.array([[xc, yc]])
+        start = time.time()
         p2 = sub.epipolar_correspondences(I1, I2, F, pc)
+        print('epipolar_correspondences: %f' % (time.time() - start))
         ax2.plot(p2[0,0], p2[0,1], 'ro', markersize=8, linewidth=2)
         plt.draw()
 
