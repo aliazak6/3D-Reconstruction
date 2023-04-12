@@ -5,13 +5,13 @@ import submission as sub
 import numpy.linalg as la
 import skimage.color as col
 import matplotlib.pyplot as plt
-
+import os
 # 1. Load the images and the parameters
+dirname = os.path.dirname(__file__) 
+I1 = cv.cvtColor(cv.imread(os.path.join(dirname,'../data/im1.png')), cv.COLOR_BGR2GRAY).astype(np.float32)
+I2 = cv.cvtColor(cv.imread(os.path.join(dirname,'../data/im2.png')), cv.COLOR_BGR2GRAY).astype(np.float32)
 
-I1 = cv.cvtColor(cv.imread('../data/im1.png'), cv.COLOR_BGR2GRAY).astype(np.float32)
-I2 = cv.cvtColor(cv.imread('../data/im2.png'), cv.COLOR_BGR2GRAY).astype(np.float32)
-
-rectify = np.load('../data/rectify.npz')
+rectify = np.load(os.path.join(dirname,'../data/rectify.npz'))
 M1, M2 = rectify['M1'], rectify['M2']
 K1p, K2p = rectify['K1p'], rectify['K2p']
 R1p, R2p = rectify['R1p'], rectify['R2p']
@@ -37,3 +37,5 @@ ax2.set_title('Depth Image')
 ax2.set_axis_off()
 plt.tight_layout()
 plt.show()
+# Save figure
+plt.savefig(os.path.join(dirname,'../results/depth.png'))

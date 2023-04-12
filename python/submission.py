@@ -4,7 +4,7 @@ Submission Functions
 """
 
 import numpy as np
-
+from scipy.signal import convolve2d
 """
 Q3.1.1 Eight Point Algorithm
        [I] pts1, points in image 1 (Nx2 matrix)
@@ -179,9 +179,28 @@ Q3.2.1 Image Rectification
            t1p t2p, rectified translation vectors (3x1 matrix)
 """
 def rectify_pair(K1, K2, R1, R2, t1, t2):
-    # replace pass by your implementation
-    pass
+    # Computer optial centers
+    c1 = -np.linalg.inv(K1@R1) @ (K1 @ t1)
+    c2 = -np.linalg.inv(K2@R2) @ (K2 @ t2)
+    # Compute the new rotation matrix
+    r1 = ((c1-c2) / np.linalg.norm(c1-c2))
+    r2 = (np.cross(R1[2,:].T,r1))
+    r3 = (np.cross(r2,r1))
+    R1p = np.array([r1,r2,r3])
+    r2 = (np.cross(R2[2,:].T,r1))
+    r3 = (np.cross(r2,r1))
+    R2p = R1p
+    # Compute new instrinsic parameters
+    K1p = K2
+    K2p = K2
+    # Compute new translation vectors
+    t1p = -R1p@c1
+    t2p = -R2p@c2
+    # Compute new rectification matrices
+    M1 = (K1p @ R1p) @ np.linalg.inv(K1 @ R1)
+    M2 = (K2p @ R2p) @ np.linalg.inv(K2 @ R2)
 
+    return M1, M2, K1p, K2p, R1p, R2p, t1p, t2p
 
 """
 Q3.2.2 Disparity Map
@@ -192,8 +211,20 @@ Q3.2.2 Disparity Map
        [O] dispM, disparity map (H1xW1 matrix)
 """
 def get_disparity(im1, im2, max_disp, win_size):
-    # replace pass by your implementation
-    pass
+    dispM = np.zeros_like(im1)
+    w = (win_size - 1) / 2
+    dist = np.zeros((im1.shape[0],im1.shape[1],max_disp+1))
+    dist[:,:,:] = np.arange(0, max_disp+1)
+    # distance calculated with wanted d value can be accessed with dist[:,:,d] 
+    kernel = np.ones((win_size,win_size))
+    conv_im1 = convolve2d(im1, kernel, mode='same')
+    for d in range(max_disp+1):
+        im2_d = np.roll(im2,d, axis=1)
+        conv_im2_d = convolve2d(im2_d, kernel, mode='same')
+        dist[:,:,d] = (conv_im1 - conv_im2_d)**2
+    dispM = np.argmin(dist, axis=2)
+    return dispM
+
 
 
 """
@@ -205,8 +236,13 @@ Q3.2.3 Depth Map
        [O] depthM, depth map (H1xW1 matrix)
 """
 def get_depth(dispM, K1, K2, R1, R2, t1, t2):
-    # replace pass by your implementation
-    pass
+    c1 = -np.linalg.inv(K1@R1) @ (K1 @ t1)
+    c2 = -np.linalg.inv(K2@R2) @ (K2 @ t2)
+    b = np.linalg.norm(c1 - c2)
+    f = K1[1,1]
+    # using 1e-9 to avoid division by zero
+    depthM = (b *f) / (dispM + 1e-9)
+    return depthM
 
 
 """
